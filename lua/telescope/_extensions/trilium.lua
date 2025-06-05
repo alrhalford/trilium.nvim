@@ -5,16 +5,11 @@ local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
 local trilium = require("trilium-api")
 
-local ConnectionOptions = {
-	token = os.getenv("TRILIUM_TOKEN"),
-	baseURL = os.getenv("TRILIUM_URL")
-}
-
 local M = {}
 
 local typeMapping = {
 	["text/html"] = { ft = "html", suffix = "html" },
-	["text/x-markdown"] = { ft = "markdown", suffix = "md" }
+	["text/x-markdown"] = { ft = "markdown", suffix = "md" },
 }
 
 local function open_note_in_buffer(note, token)
@@ -69,7 +64,7 @@ local function open_note_in_buffer(note, token)
 				end)
 			end
 
-			trilium.update_note(noteId, content, ConnectionOptions, callback)
+			trilium.update_note(noteId, content, callback)
 		end,
 	})
 
@@ -81,7 +76,7 @@ M.search = function()
 	local picker
 
 	local function refresh_picker(prompt)
-		trilium.live_search(prompt, ConnectionOptions, function(results)
+		trilium.live_search(prompt, function(results)
 			entry_cache = vim.tbl_map(function(item)
 				return {
 					value = item,
@@ -93,10 +88,15 @@ M.search = function()
 			end, results or {})
 
 			if picker then
-				picker:refresh(finders.new_table({
-					results = entry_cache,
-					entry_maker = function(entry) return entry end,
-				}), { reset_prompt = false })
+				picker:refresh(
+					finders.new_table({
+						results = entry_cache,
+						entry_maker = function(entry)
+							return entry
+						end,
+					}),
+					{ reset_prompt = false }
+				)
 			end
 		end)
 	end
@@ -105,7 +105,9 @@ M.search = function()
 		prompt_title = "Trilium Notes",
 		finder = finders.new_table({
 			results = entry_cache,
-			entry_maker = function(entry) return entry end,
+			entry_maker = function(entry)
+				return entry
+			end,
 		}),
 		sorter = conf.generic_sorter({}),
 		attach_mappings = function(prompt_bufnr, map)
@@ -113,16 +115,15 @@ M.search = function()
 				actions.close(prompt_bufnr)
 				local selection = action_state.get_selected_entry()
 				if selection then
-					trilium.fetch_note_contents(selection.value.noteId, ConnectionOptions,
-						function(note_content)
-							local note = {
-								content = note_content,
-								title = selection.value.title,
-								mime = selection.value.mime,
-								noteId = selection.value.noteId,
-							}
-							open_note_in_buffer(note, ConnectionOptions.token)
-						end)
+					trilium.fetch_note_contents(selection.value.noteId, function(note_content)
+						local note = {
+							content = note_content,
+							title = selection.value.title,
+							mime = selection.value.mime,
+							noteId = selection.value.noteId,
+						}
+						open_note_in_buffer(note, ConnectionOptions.token)
+					end)
 				end
 			end)
 			return true

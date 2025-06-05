@@ -1,16 +1,22 @@
 local Job = require("plenary.job")
+local connectionOptions = {
+	token = os.getenv("TRILIUM_TOKEN"),
+	baseURL = os.getenv("TRILIUM_URL"),
+}
 
 local M = {}
 
-M.live_search = function(prompt, connectionOptions, callback)
+M.live_search = function(prompt, callback)
 	local url = connectionOptions.baseURL .. "/etapi/notes?ancestordepth=lt4&limit=100&search=" .. prompt
 
 	Job:new({
 		command = "curl",
 		args = {
 			"-s",
-			"-H", "Authorization: " .. connectionOptions.token,
-			"-H", "Content-Type: application/json",
+			"-H",
+			"Authorization: " .. connectionOptions.token,
+			"-H",
+			"Content-Type: application/json",
 			url,
 		},
 		on_exit = function(j, return_val)
@@ -33,7 +39,7 @@ M.live_search = function(prompt, connectionOptions, callback)
 	}):start()
 end
 
-M.fetch_note_contents = function(noteId, connectionOptions, callback)
+M.fetch_note_contents = function(noteId, callback)
 	local url = connectionOptions.baseURL .. "/etapi/notes/" .. noteId .. "/content"
 	Job:new({
 		command = "curl",
@@ -54,15 +60,21 @@ M.fetch_note_contents = function(noteId, connectionOptions, callback)
 	}):start()
 end
 
-M.update_note = function(noteId, content, connectionOptions, callback)
+M.update_note = function(noteId, content, callback)
 	local url = string.format("%s/etapi/notes/%s/content", connectionOptions.baseURL, noteId)
 	Job:new({
 		command = "curl",
-		args = { "-s",
-			"-X", "PUT",
-			"-H", "Content-Type: text/plain",
-			"-H", "Authorization: " .. connectionOptions.token,
-			"-d", content, url
+		args = {
+			"-s",
+			"-X",
+			"PUT",
+			"-H",
+			"Content-Type: text/plain",
+			"-H",
+			"Authorization: " .. connectionOptions.token,
+			"-d",
+			content,
+			url,
 		},
 		on_exit = function(j, return_val)
 			if return_val ~= 0 then
